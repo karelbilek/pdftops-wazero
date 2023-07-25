@@ -1,4 +1,4 @@
-Convert PDF to PS in cgo-less portable code, just with WASM.
+Convert PDF to PS in cgo-less portable go, just with WASM+wazero.
 
 It's one part of PDF-to-PDF/A conversion.
 
