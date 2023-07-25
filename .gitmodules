@@ -1,0 +1,7 @@
+[submodule "build/patched_emscripten"]
+	path = build/patched_emscripten
+	url = git@github.com:karelbilek/emscripten.git
+	branch = implement-more-syscalls-for-standalone
+[submodule "build/xpdfreader-mirror"]
+	path = build/xpdfreader-mirror
+	url = git@github.com:karelbilek/xpdfreader-mirror.git
