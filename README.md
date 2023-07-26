@@ -36,9 +36,7 @@ func main() {
 
 Copyright
 ===
-(C) 2023 Karel Bilek
-
-The emscripten patches, the build mostly made by Jeroen Bobbeldijk ( https://github.com/jerbob92/xpdf-wasm )
+(C) 2023 Karel Bilek, Jeroen Bobbeldijk (https://github.com/jerbob92)
 
 xpdfreader (C) 1996-2022 Glyph & Cog, LLC. (from https://www.xpdfreader.com/download.html )
 
