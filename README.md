@@ -7,10 +7,14 @@ Note that the code writes to filesystem for temporary files; the local filesyste
 How to use
 ===
 
+See example_test.go
 ```
 package main
 
 import (
+    "context"
+    "fmt"
+
     pdftops "github.com/karelbilek/pdftops-wazero"
 )
 
