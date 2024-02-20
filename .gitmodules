@@ -4,4 +4,4 @@
 	branch = implement-more-syscalls-for-standalone
 [submodule "build/xpdfreader-mirror"]
 	path = build/xpdfreader-mirror
-	url = git@github.com:karelbilek/xpdfreader-mirror.git
+	url = https://github.com/karelbilek/xpdf-mirror.git
