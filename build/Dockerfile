@@ -1,4 +1,4 @@
-FROM emscripten/emsdk:3.1.53
+FROM emscripten/emsdk:3.1.44
 
 # remove prebuilt cache
 WORKDIR /emsdk/upstream/emscripten
