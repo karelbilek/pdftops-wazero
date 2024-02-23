@@ -1,8 +1,6 @@
-Convert PDF to PS in cgo-less portable go, just with WASM+wazero.
+Convert PDF to PS in cgo-less portable go, just with WASM+wazero+fake memory FS.
 
 It's one part of PDF-to-PDF/A conversion.
-
-Note that the code writes to filesystem for temporary files; the local filesystem should not be full or read-only.
 
 How to use
 ===

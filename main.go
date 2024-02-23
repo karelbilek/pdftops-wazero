@@ -5,12 +5,15 @@ import (
 	"crypto/rand"
 	"embed"
 	"fmt"
+	"io"
 	"io/fs"
+
 	"os"
-	"path/filepath"
 	"strings"
 
+	"github.com/karelbilek/pdftops-wazero/internal/memfs"
 	"github.com/tetratelabs/wazero"
+	"github.com/tetratelabs/wazero/experimental/sysfs"
 	"github.com/tetratelabs/wazero/imports/emscripten"
 	"github.com/tetratelabs/wazero/imports/wasi_snapshot_preview1"
 )
@@ -53,18 +56,16 @@ func init() {
 }
 
 func ConvertPDFToPS(ctx context.Context, in []byte) ([]byte, error) {
-	dir, err := os.MkdirTemp("", "")
+	fs, mfs, err := memfs.New(in)
 	if err != nil {
-		return nil, fmt.Errorf("cannot create a temp dir: %w", err)
-	}
-	defer os.RemoveAll(dir)
-
-	inF := filepath.Join(dir, "in.pdf")
-	if err := os.WriteFile(inF, in, 0o600); err != nil {
-		return nil, fmt.Errorf("cannot create a temp file: %w", err)
+		return nil, fmt.Errorf("cannot create a new FS: %w", err)
 	}
 
-	fsConfig := wazero.NewFSConfig().WithDirMount(dir, "/").WithFSMount(fontSub, "/usr/local/share/ghostscript/fonts/")
+	fsc := wazero.NewFSConfig()
+	fsc = fsc.(sysfs.FSConfig).WithSysFSMount(fs, "/")
+
+	fsc = fsc.WithFSMount(fontSub, "/usr/local/share/ghostscript/fonts/")
+	fsc = fsc.WithFSMount(fontSub, "/usr/share/ghostscript/fonts/")
 
 	stdout := new(strings.Builder)
 
@@ -73,7 +74,7 @@ func ConvertPDFToPS(ctx context.Context, in []byte) ([]byte, error) {
 		WithStdout(stdout).
 		WithStderr(stdout).
 		WithRandSource(rand.Reader).
-		WithFSConfig(fsConfig).
+		WithFSConfig(fsc).
 		WithName("").
 		WithArgs("pdftops", "/in.pdf", "/out.ps")
 
@@ -82,7 +83,11 @@ func ConvertPDFToPS(ctx context.Context, in []byte) ([]byte, error) {
 		return nil, fmt.Errorf("cannot convert to PS. Output from pdftops:\n%s", stdout.String())
 	}
 
-	out, err := os.ReadFile(filepath.Join(dir, "out.ps"))
+	outF, err := mfs.OpenFile("/out.ps", os.O_RDONLY, 0)
+	if err != nil {
+		return nil, fmt.Errorf("cannot open output file:\n%w\n\noutput from pdftops:\n%s", err, stdout.String())
+	}
+	out, err := io.ReadAll(outF)
 	if err != nil {
 		return nil, fmt.Errorf("cannot read output file:\n%w\n\noutput from pdftops:\n%s", err, stdout.String())
 	}
