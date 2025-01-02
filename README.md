@@ -2,6 +2,8 @@ Convert PDF to PS in cgo-less portable go, just with WASM+wazero+fake memory FS.
 
 It's one part of PDF-to-PDF/A conversion.
 
+This is an unfinished project of mine; hopefully will finish it one day
+
 How to use
 ===
 
