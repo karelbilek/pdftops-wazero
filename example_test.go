@@ -8,13 +8,17 @@ import (
 	pdftops "github.com/karelbilek/pdftops-wazero"
 )
 
-func ExampleConvertPDFToPS() {
+func Example_convertPDFToPS() {
+	g, err := pdftops.New(context.Background())
+	if err != nil {
+		panic(err)
+	}
 	in, err := os.ReadFile("some.pdf")
 	if err != nil {
 		panic(err)
 	}
 
-	out, err := pdftops.ConvertPDFToPS(context.Background(), in)
+	out, err := g.ConvertPDFToPS(context.Background(), in)
 	if err != nil {
 		panic(err)
 	}

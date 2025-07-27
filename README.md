@@ -1,6 +1,9 @@
-Convert PDF to PS in cgo-less portable go, just with WASM+wazero+fake memory FS.
+Pstopdf tool from xpdfreader, converted to wasm, run with WASM+wazero+fake memory FS.
 
-It's one part of PDF-to-PDF/A conversion.
+It's one part of PDF-to-PDF/A conversion. (We use this on some weird PDFs that refuse to be 
+converted just with ghostscript; most are happy with ghostscript, some are not.)
+
+We are actually building all xpdfreader tools to wasm; but we then use just pdftops.
 
 How to use
 ===
@@ -17,12 +20,17 @@ import (
 )
 
 func main() {
+	g, err = pdftops.New(context.Background())
+	if err != nil {
+		panic(err)
+	}
+
 	in, err := os.ReadFile("some.pdf")
 	if err != nil {
 		panic(err)
 	}
 
-	out, err := pdftops.ConvertPDFToPS(context.Background(), in)
+	out, err := g.ConvertPDFToPS(context.Background(), in)
 	if err != nil {
 		panic(err)
 	}

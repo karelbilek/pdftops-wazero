@@ -18,7 +18,7 @@ import (
 	"github.com/tetratelabs/wazero/imports/wasi_snapshot_preview1"
 )
 
-//go:embed wasm/pdftops.wasm
+//go:embed build/out/pdftops.wasm
 var pdftops []byte
 
 //go:embed gsfonts/*
@@ -26,36 +26,42 @@ var fonts embed.FS
 
 var fontSub fs.FS
 
-var compiled wazero.CompiledModule
-var wruntime wazero.Runtime
-
 func init() {
-	ctx := context.Background()
-	r := wazero.NewRuntime(ctx)
-	if _, err := wasi_snapshot_preview1.Instantiate(ctx, r); err != nil {
-		panic(fmt.Errorf("cannot instantiate wasi preview 1: %w", err))
-	}
-
-	m, err := r.CompileModule(ctx, pdftops)
-	if err != nil {
-		panic(fmt.Errorf("cannot compile wasm: %w", err))
-	}
-
-	if _, err := emscripten.InstantiateForModule(ctx, r, m); err != nil {
-		panic(fmt.Errorf("cannot instantiate emscriptem: %w", err))
-	}
-
 	sub, err := fs.Sub(fonts, "gsfonts")
 	if err != nil {
 		panic(err)
 	}
-
-	compiled = m
-	wruntime = r
 	fontSub = sub
 }
 
-func ConvertPDFToPS(ctx context.Context, in []byte) ([]byte, error) {
+type PdfToPs struct {
+	compiled wazero.CompiledModule
+	wruntime wazero.Runtime
+}
+
+// DoInit inits; it is safe to call concurrently; only first will init
+func New(ctx context.Context) (*PdfToPs, error) {
+	r := wazero.NewRuntime(ctx)
+	if _, err := wasi_snapshot_preview1.Instantiate(ctx, r); err != nil {
+		return nil, fmt.Errorf("cannot instantiate wasi preview 1: %w", err)
+	}
+
+	m, err := r.CompileModule(ctx, pdftops)
+	if err != nil {
+		return nil, fmt.Errorf("cannot compile wasm: %w", err)
+	}
+
+	if _, err := emscripten.InstantiateForModule(ctx, r, m); err != nil {
+		return nil, fmt.Errorf("cannot instantiate emscriptem: %w", err)
+	}
+
+	return &PdfToPs{
+		compiled: m,
+		wruntime: r,
+	}, nil
+}
+
+func (p *PdfToPs) ConvertPDFToPS(ctx context.Context, in []byte) ([]byte, error) {
 	fs, mfs, err := memfs.New(in)
 	if err != nil {
 		return nil, fmt.Errorf("cannot create a new FS: %w", err)
@@ -76,9 +82,9 @@ func ConvertPDFToPS(ctx context.Context, in []byte) ([]byte, error) {
 		WithRandSource(rand.Reader).
 		WithFSConfig(fsc).
 		WithName("").
-		WithArgs("pdftops", "/in.pdf", "/out.ps")
+		WithArgs("pdftops", "-paper", "match", "/in.pdf", "/out.ps")
 
-	_, err = wruntime.InstantiateModule(ctx, compiled, moduleConfig)
+	_, err = p.wruntime.InstantiateModule(ctx, p.compiled, moduleConfig)
 	if err != nil {
 		return nil, fmt.Errorf("cannot convert to PS. Output from pdftops:\n%s", stdout.String())
 	}
