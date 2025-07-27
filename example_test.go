@@ -1,11 +1,11 @@
-package pdftops_test
+package pdftopswazero_test
 
 import (
 	"context"
 	"fmt"
 	"os"
 
-	pdftops "github.com/karelbilek/pdftops-wazero"
+	pdftops "github.com/karelbilek/pdftopswazero"
 )
 
 func Example_convertPDFToPS() {

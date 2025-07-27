@@ -1,17 +1,15 @@
-package pdftops
+package pdftopswazero
 
 import (
 	"context"
 	"crypto/rand"
 	"embed"
 	"fmt"
-	"io"
 	"io/fs"
 
-	"os"
 	"strings"
 
-	"github.com/karelbilek/pdftops-wazero/internal/memfs"
+	"github.com/karelbilek/wazero-fs-tools/memfs"
 	"github.com/tetratelabs/wazero"
 	"github.com/tetratelabs/wazero/experimental/sysfs"
 	"github.com/tetratelabs/wazero/imports/emscripten"
@@ -62,9 +60,11 @@ func New(ctx context.Context) (*PdfToPs, error) {
 }
 
 func (p *PdfToPs) ConvertPDFToPS(ctx context.Context, in []byte) ([]byte, error) {
-	fs, mfs, err := memfs.New(in)
-	if err != nil {
-		return nil, fmt.Errorf("cannot create a new FS: %w", err)
+	fs := memfs.New()
+
+	errno := fs.WriteFile("in.pdf", in)
+	if errno != 0 {
+		return nil, fmt.Errorf("%s %q: %w", "cannot write initial file", "in.pdf", errno)
 	}
 
 	fsc := wazero.NewFSConfig()
@@ -84,18 +84,14 @@ func (p *PdfToPs) ConvertPDFToPS(ctx context.Context, in []byte) ([]byte, error)
 		WithName("").
 		WithArgs("pdftops", "-paper", "match", "/in.pdf", "/out.ps")
 
-	_, err = p.wruntime.InstantiateModule(ctx, p.compiled, moduleConfig)
+	_, err := p.wruntime.InstantiateModule(ctx, p.compiled, moduleConfig)
 	if err != nil {
 		return nil, fmt.Errorf("cannot convert to PS. Output from pdftops:\n%s", stdout.String())
 	}
 
-	outF, err := mfs.OpenFile("/out.ps", os.O_RDONLY, 0)
-	if err != nil {
-		return nil, fmt.Errorf("cannot open output file:\n%w\n\noutput from pdftops:\n%s", err, stdout.String())
-	}
-	out, err := io.ReadAll(outF)
-	if err != nil {
-		return nil, fmt.Errorf("cannot read output file:\n%w\n\noutput from pdftops:\n%s", err, stdout.String())
+	out, errNo := fs.ReadFile("/out.ps")
+	if errNo != 0 {
+		return nil, fmt.Errorf("cannot read output file:\n%d\n\noutput from pdftops:\n%s", errNo, stdout.String())
 	}
 
 	return out, nil
